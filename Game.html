@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Virtual Pet Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .pet-selection {
+            margin-bottom: 20px;
+        }
+
+        .pet-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .pet-option {
+            background: #f0f0f0;
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.5em;
+            position: relative;
+            user-select: none;
+            flex: 1 0 calc(33.333% - 20px);
+            max-width: calc(33.333% - 20px);
+            min-width: 80px;
+        }
+
+        .pet-option:hover {
+            transform: scale(1.1);
+            border-color: #667eea;
+        }
+
+        .pet-option.selected {
+            border-color: #764ba2;
+            background: #e8f0fe;
+        }
+
+        .care-info-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            user-select: none;
+        }
+
+        .care-info-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .care-info-modal.active {
+            display: flex;
+        }
+
+        .care-info-content {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            text-align: left;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .care-section {
+            margin: 12px 0;
+        }
+
+        .care-section h4 {
+            color: #667eea;
+            margin-bottom: 6px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+            font-size: 1em;
+        }
+
+        .care-section ul {
+            margin-left: 18px;
+            line-height: 1.5;
+            font-size: 0.9em;
+        }
+
+        .good-foods { color: #28a745; }
+        .bad-foods { color: #dc3545; }
+
+        .pet-display {
+            background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pet-character {
+            font-size: 4em;
+            animation: bounce 2s infinite;
+            margin: 15px 0;
+            transition: all 0.3s ease;
+        }
+
+        @media (min-width: 480px) {
+            .pet-character {
+                font-size: 6em;
+            }
+        }
+
+        .pet-image {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 8px;
+            border: 3px solid white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .pet-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .stat-bar {
+            background: #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            height: 25px;
+        }
+
+        .stat-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8em;
+        }
+
+        .happiness-fill { background: linear-gradient(90deg, #ff6b6b, #ff8e8e); }
+        .hunger-fill { background: linear-gradient(90deg, #4ecdc4, #44a08d); }
+        .energy-fill { background: linear-gradient(90deg, #feca57, #ff9ff3); }
+        .health-fill { background: linear-gradient(90deg, #5f27cd, #a55eea); }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .action-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        @media (min-width: 480px) {
+            .action-btn {
+                padding: 15px 20px;
+                font-size: 1.1em;
+            }
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .pet-name-input {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 1em;
+            width: 100%;
+            max-width: 250px;
+            margin: 10px auto;
+            text-align: center;
+        }
+
+        .adopt-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 12px 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px;
+            width: 100%;
+            max-width: 200px;
+        }
+
+        .status-message {
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            padding: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9em;
+        }
+
+        @media (min-width: 480px) {
+            .status-message {
+                font-size: 1em;
+                padding: 10px;
+            }
+        }
+
+        .pet-age {
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 6px 12px;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        h1 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 2em;
+        }
+
+        @media (min-width: 480px) {
+            h1 {
+                font-size: 2.5em;
+            }
+        }
+
+        h2 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.5em;
+        }
+
+        /* Scrollbar for modals */
+        .care-info-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .care-info-content::-webkit-scrollbar-thumb {
+            background-color: #764ba2;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Paw City</h1>
+        <div id="selectionScreen" class="pet-selection">
+            <h2>Select a Pet</h2>
+            <div class="pet-options" id="petOptions">
+                <div class="pet-option" data-pet="dog">🐶
+                    <button class="care-info-btn" aria-label="Dog Care Info">i</button>
+                </div>
+                <div class="pet-option" data-pet="cat">🐱
+                    <button class="care-info-btn" aria-label="Cat Care Info">i</button>
+                </div>
+                <div class="pet-option" data-pet="bird">🐦
+                    <button class="care-info-btn" aria-label="Bird Care Info">i</button>
+                </div>
+                <div class="pet-option" data-pet="fish">🐠
+                    <button class="care-info-btn" aria-label="Fish Care Info">i</button>
+                </div>
+                <div class="pet-option" data-pet="rabbit">🐰
+                    <button class="care-info-btn" aria-label="Rabbit Care Info">i</button>
+                </div>
+                <div class="pet-option" data-pet="horse">🐴
+                    <button class="care-info-btn" aria-label="Horse Care Info">i</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="adoptionScreen" class="hidden">
+            <h2>Adopt Your Pet</h2>
+            <input type="text" id="petNameInput" class="pet-name-input" placeholder="Enter pet's name" maxlength="20" />
+            <button class="adopt-btn" id="adoptPetBtn">Adopt Pet!</button>
+        </div>
+
+        <div id="petScreen" class="hidden">
+            <h2>Your Virtual Pet</h2>
+            <div class="pet-display">
+                <div id="petEmoji" class="pet-character" aria-label="Pet character emoji">🐶</div>
+                <div id="petName" style="font-size:1.5em; font-weight:bold; margin-top:5px;">Pet Name</div>
+                <div class="pet-age" id="petAgeDisplay">Age: 0</div>
+                <div class="pet-stats">
+                    <div>
+                        <div>Happiness</div>
+                        <div class="stat-bar"><div class="stat-fill happiness-fill" id="happinessBar" style="width: 100%;">100%</div></div>
+                    </div>
+                    <div>
+                        <div>Hunger</div>
+                        <div class="stat-bar"><div class="stat-fill hunger-fill" id="hungerBar" style="width: 0%;">0%</div></div>
+                    </div>
+                    <div>
+                        <div>Energy</div>
+                        <div class="stat-bar"><div class="stat-fill energy-fill" id="energyBar" style="width: 100%;">100%</div></div>
+                    </div>
+                    <div>
+                        <div>Health</div>
+                        <div class="stat-bar"><div class="stat-fill health-fill" id="healthBar" style="width: 100%;">100%</div></div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn" id="feedBtn">Feed</button>
+                    <button class="action-btn" id="playBtn">Play</button>
+                    <button class="action-btn" id="sleepBtn">Sleep</button>
+                    <button class="action-btn" id="healBtn">Heal</button>
+                </div>
+            </div>
+
+            <div class="status-message" id="statusMessage" aria-live="polite"></div>
+        </div>
+    </div>
+
+    <div class="care-info-modal" id="careInfoModal" role="dialog" aria-modal="true" aria-labelledby="careInfoTitle">
+        <div class="care-info-content">
+            <button class="close-modal" id="closeCareInfoBtn" aria-label="Close care information">&times;</button>
+            <h2 id="careInfoTitle">Pet Care Information</h2>
+            <div id="careInfoDetails"></div>
+        </div>
+    </div>
+
+    <script>
+        const petOptions = document.querySelectorAll('.pet-option');
+        const petNameInput = document.getElementById('petNameInput');
+        const adoptPetBtn = document.getElementById('adoptPetBtn');
+        const selectionScreen = document.getElementById('selectionScreen');
+        const adoptionScreen = document.getElementById('adoptionScreen');
+        const petScreen = document.getElementById('petScreen');
+
+        const petEmoji = document.getElementById('petEmoji');
+        const petNameDisplay = document.getElementById('petName');
+        const petAgeDisplay = document.getElementById('petAgeDisplay');
+
+        const happinessBar = document.getElementById('happinessBar');
+        const hungerBar = document.getElementById('hungerBar');
+        const energyBar = document.getElementById('energyBar');
+        const healthBar = document.getElementById('healthBar');
+
+        const feedBtn = document.getElementById('feedBtn');
+        const playBtn = document.getElementById('playBtn');
+        const sleepBtn = document.getElementById('sleepBtn');
+        const healBtn = document.getElementById('healBtn');
+
+        const statusMessage = document.getElementById('statusMessage');
+
+        const careInfoModal = document.getElementById('careInfoModal');
+        const careInfoDetails = document.getElementById('careInfoDetails');
+        const closeCareInfoBtn = document.getElementById('closeCareInfoBtn');
+
+        let selectedPet = null;
+        let pet = null;
+        let petTimer = null;
+
+        // Data for pets and care info
+        const petsData = {
+            dog: {
+                emoji: '🐶',
+                care: {
+                    food: {
+                        good: ['Dog food', 'Cooked meat', 'Carrots', 'Peanut butter (small amount)'],
+                        bad: ['Chocolate', 'Grapes', 'Onions', 'Avocado', 'Alcohol']
+                    },
+                    activities: ['Walks', 'Fetch', 'Training', 'Socialization'],
+                    grooming: ['Brushing fur', 'Bathing occasionally', 'Nail trimming']
+                }
+            },
+            cat: {
+                emoji: '🐱',
+                care: {
+                    food: {
+                        good: ['Cat food', 'Cooked chicken', 'Salmon', 'Catnip'],
+                        bad: ['Onions', 'Garlic', 'Chocolate', 'Alcohol']
+                    },
+                    activities: ['Playing with toys', 'Climbing', 'Scratching posts'],
+                    grooming: ['Brushing fur', 'Cleaning litter box', 'Nail trimming']
+                }
+            },
+            bird: {
+                emoji: '🐦',
+                care: {
+                    food: {
+                        good: ['Seeds', 'Fruits', 'Vegetables', 'Pellets'],
+                        bad: ['Chocolate', 'Avocado', 'Caffeine', 'Alcohol']
+                    },
+                    activities: ['Flying', 'Singing', 'Playing with toys'],
+                    grooming: ['Wing clipping (if needed)', 'Bathing', 'Nail trimming']
+                }
+            },
+            fish: {
+                emoji: '🐠',
+                care: {
+                    food: {
+                        good: ['Fish flakes', 'Frozen food', 'Algae wafers'],
+                        bad: ['Overfeeding', 'Tap water with chlorine']
+                    },
+                    activities: ['Swimming', 'Exploring tank'],
+                    grooming: ['Tank cleaning', 'Water changes']
+                }
+            },
+            rabbit: {
+                emoji: '🐰',
+                care: {
+                    food: {
+                        good: ['Hay', 'Fresh vegetables', 'Pellets'],
+                        bad: ['Chocolate', 'Iceberg lettuce', 'Beans']
+                    },
+                    activities: ['Digging', 'Chewing toys', 'Running'],
+                    grooming: ['Brushing fur', 'Nail trimming']
+                }
+            },
+            horse: {
+                emoji: '🐴',
+                care: {
+                    food: {
+                        good: ['Hay', 'Grains', 'Carrots', 'Apples'],
+                        bad: ['Chocolate', 'Avocado', 'Ryegrass (if moldy)']
+                    },
+                    activities: ['Riding', 'Grazing', 'Running'],
+                    grooming: ['Brushing', 'Hoof cleaning', 'Bathing']
+                }
+            }
+        };
+
+        // Helper function to update stat bars
+        function updateStatBar(barElem, value) {
+            value = Math.min(Math.max(value, 0), 100);
+            barElem.style.width = value + '%';
+            barElem.textContent = value + '%';
+        }
+
+        // Pet object class
+        class Pet {
+            constructor(type, name) {
+                this.type = type;
+                this.name = name;
+                this.age = 0;
+                this.happiness = 100;
+                this.hunger = 0;
+                this.energy = 100;
+                this.health = 100;
+            }
+
+            feed() {
+                if (this.hunger <= 0) {
+                    setStatus('Your pet is not hungry.');
+                    return;
+                }
+                this.hunger = Math.max(this.hunger - 20, 0);
+                this.happiness = Math.min(this.happiness + 10, 100);
+                this.energy = Math.min(this.energy + 5, 100);
+                this.health = Math.min(this.health + 5, 100);
+                setStatus(`${this.name} enjoyed the meal!`);
+                updateAllStats();
+            }
+
+            play() {
+                if (this.energy <= 10) {
+                    setStatus(`${this.name} is too tired to play.`);
+                    return;
+                }
+                if (this.hunger >= 90) {
+                    setStatus(`${this.name} is too hungry to play.`);
+                    return;
+                }
+                this.happiness = Math.min(this.happiness + 15, 100);
+                this.energy = Math.max(this.energy - 20, 0);
+                this.hunger = Math.min(this.hunger + 15, 100);
+                setStatus(`${this.name} had fun playing!`);
+                updateAllStats();
+            }
+
+            sleep() {
+                this.energy = Math.min(this.energy + 40, 100);
+                this.hunger = Math.min(this.hunger + 10, 100);
+                setStatus(`${this.name} took a nap and feels refreshed!`);
+                updateAllStats();
+            }
+
+            heal() {
+                if (this.health >= 100) {
+                    setStatus(`${this.name} is already healthy.`);
+                    return;
+                }
+                this.health = Math.min(this.health + 30, 100);
+                this.happiness = Math.min(this.happiness + 5, 100);
+                setStatus(`${this.name} is feeling better after healing!`);
+                updateAllStats();
+            }
+
+            ageUp() {
+                this.age += 1;
+                // Aging affects stats slightly
+                this.health = Math.max(this.health - 5, 0);
+                this.happiness = Math.max(this.happiness - 5, 0);
+                this.energy = Math.max(this.energy - 5, 0);
+                updatePetAge();
+                updateAllStats();
+            }
+
+            timeTick() {
+                // Each tick, hunger increases, energy decreases, happiness decreases if hungry or tired
+                this.hunger = Math.min(this.hunger + 5, 100);
+                this.energy = Math.max(this.energy - 5, 0);
+
+                if (this.hunger > 70) {
+                    this.happiness = Math.max(this.happiness - 10, 0);
+                    this.health = Math.max(this.health - 5, 0);
+                }
+
+                if (this.energy < 20) {
+                    this.happiness = Math.max(this.happiness - 10, 0);
+                }
+
+                if (this.health <= 0) {
+                    setStatus(`${this.name} has become very ill. Please heal them!`);
+                }
+
+                updateAllStats();
+            }
+        }
+
+        // Display pet care info modal
+        function showCareInfo(petType) {
+            const petCare = petsData[petType].care;
+            let html = '<div class="care-section"><h4>Good Foods</h4><ul class="good-foods">';
+            petCare.food.good.forEach(food => {
+                html += `<li>${food}</li>`;
+            });
+            html += '</ul></div>';
+
+            html += '<div class="care-section"><h4>Foods to Avoid</h4><ul class="bad-foods">';
+            petCare.food.bad.forEach(food => {
+                html += `<li>${food}</li>`;
+            });
+            html += '</ul></div>';
+
+            html += '<div class="care-section"><h4>Recommended Activities</h4><ul>';
+            petCare.activities.forEach(activity => {
+                html += `<li>${activity}</li>`;
+            });
+            html += '</ul></div>';
+
+            html += '<div class="care-section"><h4>Grooming Tips</h4><ul>';
+            petCare.grooming.forEach(groom => {
+                html += `<li>${groom}</li>`;
+            });
+            html += '</ul></div>';
+
+            careInfoDetails.innerHTML = html;
+            careInfoModal.classList.add('active');
+        }
+
+        function closeCareInfo() {
+            careInfoModal.classList.remove('active');
+        }
+
+        // Set status message
+        function setStatus(msg) {
+            statusMessage.textContent = msg;
+        }
+
+        // Update all stat bars
+        function updateAllStats() {
+            updateStatBar(happinessBar, pet.happiness);
+            updateStatBar(hungerBar, pet.hunger);
+            updateStatBar(energyBar, pet.energy);
+            updateStatBar(healthBar, pet.health);
+        }
+
+        // Update pet age display
+        function updatePetAge() {
+            petAgeDisplay.textContent = `Age: ${pet.age}`;
+        }
+
+        // Adopt pet
+        function adoptPet() {
+            const name = petNameInput.value.trim();
+            if (!selectedPet) {
+                alert('Please select a pet first.');
+                return;
+            }
+            if (name.length < 1) {
+                alert("Please enter your pet's name.");
+                return;
+            }
+
+            pet = new Pet(selectedPet, name);
+
+            // Update UI
+            petEmoji.textContent = petsData[selectedPet].emoji;
+            petNameDisplay.textContent = name;
+            updatePetAge();
+
+            selectionScreen.classList.add('hidden');
+            adoptionScreen.classList.add('hidden');
+            petScreen.classList.remove('hidden');
+
+            setStatus(`You adopted ${name} the ${selectedPet}! Take good care of them.`);
+
+            if (petTimer) clearInterval(petTimer);
+            petTimer = setInterval(() => {
+                pet.timeTick();
+                // Age up every 60 seconds (or whatever interval you want)
+                if (Date.now() % 60000 < 1000) {
+                    pet.ageUp();
+                }
+            }, 5000);
+        }
+
+        // Event listeners
+
+        // Pet selection
+        petOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                petOptions.forEach(o => o.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedPet = option.dataset.pet;
+
+                adoptionScreen.classList.remove('hidden');
+                petNameInput.value = '';
+                setStatus('');
+            });
+
+            // Stop propagation on care info button click inside each pet-option
+            const infoBtn = option.querySelector('.care-info-btn');
+            infoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showCareInfo(option.dataset.pet);
+            });
+        });
+
+        // Close care info modal
+        closeCareInfoBtn.addEventListener('click', closeCareInfo);
+        careInfoModal.addEventListener('click', (e) => {
+            if (e.target === careInfoModal) {
+                closeCareInfo();
+            }
+        });
+
+        // Adopt pet button
+        adoptPetBtn.addEventListener('click', adoptPet);
+
+        // Action buttons
+        feedBtn.addEventListener('click', () => {
+            pet.feed();
+        });
+
+        playBtn.addEventListener('click', () => {
+            pet.play();
+        });
+
+        sleepBtn.addEventListener('click', () => {
+            pet.sleep();
+        });
+
+        healBtn.addEventListener('click', () => {
+            pet.heal();
+        });
+    </script>
+</body>
+</html>
